@@ -1,0 +1,6 @@
+{
+  "network": "testnet",
+  "blockLengthToBundle": 1,
+  "httpPort": 2880,
+  "udpPort": 2881
+}
