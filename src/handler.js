@@ -1,34 +1,41 @@
 const bcoin = require("../bcoin");
-const server = require("fastify")({
-  logger: true,
-});
 const AutoLoad = require("@fastify/autoload");
 const path = require("path");
 const dgram = require("dgram");
+const uWS = require("uWebSockets.js");
+const fs = require("fs");
 
 global.clients = [];
 const HEARTBEAT_INTERVAL = 60000 * 3; // 3 minutes
 
 module.exports = async function handler() {
-  await startWebserver(server);
-
-  await server.listen({ port: global.config.httpPort }).then(() => {
-    console.log(`Webserver started at :${config.httpPort}`);
-  });
+  await startWebserver(global.config.httpPort);
 
   await startUdpServer().then(() => {
     setInterval(checkHeartbeats, 60000);
   });
 };
 
-const startWebserver = async function (server, opts) {
-  // This loads all plugins defined in routes
-  // define your routes in one of these
-  server.register(AutoLoad, {
-    dir: path.join(__dirname, "routes"),
-    options: Object.assign({}, opts),
+function startWebserver(port) {
+  const app = uWS.App();
+
+  const files = fs.readdirSync(path.join(__dirname, "routes"));
+
+  files.forEach((file) => {
+    const route = require(path.join(__dirname, "routes", file));
+    if (route.path && route.method && route.handler) {
+      app[route.method](route.path, route.handler);
+    }
   });
-};
+
+  app.listen("0.0.0.0", port, (token) => {
+    if (token) {
+      console.log(`Server running on http://localhost:${port}`);
+    } else {
+      console.log(`Failed to listen on port ${port}`);
+    }
+  });
+}
 
 const startUdpServer = async function () {
   const udpServer = dgram.createSocket("udp4");

@@ -12,6 +12,7 @@
     "cbor": "^9.0.2",
     "fastify": "^4.26.2",
     "lmdb": "^3.0.6",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.43.0",
     "ws": "^8.16.0"
   }
 }
