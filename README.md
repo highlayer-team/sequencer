@@ -25,6 +25,6 @@ Aslong as you are connected to the Sequencer's UDP client list, it will send you
 ```json
 {
     "op": 20,
-    "transaction": cborData
+    "transaction": encodedData
 }
 ```
