@@ -1,4 +1,4 @@
-const cbor = require("cbor");
+const msgpackr = require("msgpackr");
 const { base58 } = require("bstring");
 
 class HighlayerBundle {
@@ -10,7 +10,7 @@ class HighlayerBundle {
 
   encode() {
     return base58.encode(
-      cbor.encode({
+      msgpackr.encode({
         parentBundle: this.parentBundle,
         txids: this.txids,
         sequencerSignature: this.sequencerSignature,
@@ -20,7 +20,7 @@ class HighlayerBundle {
 
   static decode(base58encoded) {
     const buffer = base58.decode(base58encoded);
-    const decodedObject = cbor.decodeFirstSync(buffer);
+    const decodedObject = msgpackr.decode(buffer);
     return {
       parentBundle: decodedObject.parentBundle,
       txids: decodedObject.txids,

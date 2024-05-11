@@ -87,6 +87,7 @@ async function handleTransaction(res, req, data) {
       );
     });
   } catch (e) {
+    console.log(e);
     res.writeStatus("500 Internal Server Error");
     res.tryEnd("Internal Server Error");
     return;

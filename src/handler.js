@@ -1,5 +1,4 @@
 const bcoin = require("../bcoin");
-const AutoLoad = require("@fastify/autoload");
 const path = require("path");
 const dgram = require("dgram");
 const uWS = require("uWebSockets.js");
