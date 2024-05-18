@@ -23,7 +23,8 @@ const { iterateData } = require("./utils/iterateData");
     bundleHash: lmdb.open(`${dbDir}/bundleHash`), // Index'd the bundle hash and keys the bundle number
     bundles: lmdb.open(`${dbDir}/bundles`), // Stores the entire bundle indexed by number
     toBeSettled: lmdb.open(`${dbDir}/toBeSettled`), // Transactions that have been uploaded but arent yet bundled. Used to sync old mempool onload
-    deposits: lmdb.open(`${dbDir}/deposits`), // Stores user deposit amounts used
+    balances: lmdb.open(`${dbDir}/balances`), // Stores user sequencer user deposits,
+    depositsIndexed: lmdb.open(`${dbDir}/depositsIndexed`), // Stores the hashes of all deposit txs,
   };
 
   bcoin.set(global.config.network);
@@ -100,8 +101,7 @@ const { iterateData } = require("./utils/iterateData");
   global.wallet.on("confirmed", async (tx, details) => {
     console.log(tx);
     let pendingBundle = await global.databases.pendingBundles.get(tx.txid());
-    console.log(pendingBundle);
-    console.log(pendingBundle);
+
     if (!pendingBundle) {
       return console.log("hrm");
     }

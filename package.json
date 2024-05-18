@@ -10,6 +10,7 @@
     "bstring": "^0.3.9",
     "lmdb": "^3.0.6",
     "msgpackr": "^1.10.2",
-    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.43.0"
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.43.0",
+    "ws": "^8.17.0"
   }
 }
