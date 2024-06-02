@@ -9,7 +9,7 @@ In order to recieve many transaction at the same time you must send the UDP clie
 ```json5
 {
   op: 30, // Request identifier
-  startingPoint: 0, // Starting point in the ledger
+  startingPoint: 0, // Starting point in the sequencerTxIndex
   amount: 1000, // Max transactions is 1000
 }
 ```
@@ -20,7 +20,7 @@ You will then recieve UDP messages
 {
   op: 31,
   transaction: encodedData,
-  ledgerIndex: number,
+  sequencerTxIndex: number,
 }
 ```
 

@@ -71,12 +71,12 @@ async function handleTransaction(res, req, data) {
     }
 
     // Increment and use the new length
-    let ledgerPosition = ++global.ledgerLength;
+    let ledgerPosition = ++global.sequencerTxIndex;
     let bundlePosition = ++global.pendingTransactionLength;
 
     // Add sequencer information
     decodedTx.bundlePosition = bundlePosition;
-    decodedTx.ledgerPosition = ledgerPosition;
+    decodedTx.sequencerTxIndex = ledgerPosition;
     decodedTx.parentBundleHash = global.recentBundle;
     decodedTx.sequencerSignature = base58.encode(
       signData(Buffer.from(new HighlayerTx(decodedTx).encode()))
@@ -101,7 +101,7 @@ async function handleTransaction(res, req, data) {
         JSON.stringify({
           hash: txHash,
           bundlePosition: decodedTx.bundlePosition,
-          ledgerPosition: decodedTx.ledgerPosition,
+          sequencerTxIndex: decodedTx.sequencerTxIndex,
           parentBundleHash: decodedTx.parentBundleHash,
           sequencerSignature: decodedTx.sequencerSignature,
         })
@@ -109,7 +109,10 @@ async function handleTransaction(res, req, data) {
     });
 
     await global.databases.transactions.put(txHash, signedTx);
-    await global.databases.ledger.put(ledgerPosition.toString(), txHash);
+    await global.databases.sequencerTxIndex.put(
+      ledgerPosition.toString(),
+      txHash
+    );
     await global.databases.toBeSettled.put(txHash, signedTx);
 
     clients.forEach((client) => {
@@ -117,7 +120,7 @@ async function handleTransaction(res, req, data) {
         msgpackr.encode({
           op: 21,
           transaction: signedTx,
-          ledgerIndex: ledgerPosition,
+          sequencerTxIndex: ledgerPosition,
         }),
         client.port,
         client.address,

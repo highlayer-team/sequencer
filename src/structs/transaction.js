@@ -8,7 +8,8 @@ class HighlayerTx {
     nonce,
     actions,
     bundlePosition,
-    ledgerPosition,
+    sequencerTxIndex,
+    trueTxIndex,
     parentBundleHash,
     sequencerSignature,
   }) {
@@ -17,7 +18,8 @@ class HighlayerTx {
     this.nonce = nonce || crypto.randomBytes(4).readUInt32BE(0);
     this.actions = actions || [];
     this.bundlePosition = bundlePosition || null;
-    this.ledgerPosition = ledgerPosition || null;
+    this.sequencerTxIndex = sequencerTxIndex || null;
+    this.trueTxIndex = trueTxIndex || null;
     this.parentBundleHash = parentBundleHash || null;
     this.sequencerSignature = sequencerSignature || null;
   }
@@ -30,7 +32,8 @@ class HighlayerTx {
         nonce: this.nonce,
         actions: this.actions,
         bundlePosition: this.bundlePosition,
-        ledgerPosition: this.ledgerPosition,
+        sequencerTxIndex: this.sequencerTxIndex,
+        trueTxIndex: this.trueTxIndex,
         parentBundleHash: this.parentBundleHash,
         sequencerSignature: this.sequencerSignature,
       })
@@ -45,7 +48,8 @@ class HighlayerTx {
         nonce: this.nonce,
         actions: this.actions,
         bundlePosition: null,
-        ledgerPosition: null,
+        sequencerTxIndex: null,
+        trueTxIndex: null,
         parentBundleHash: null,
         sequencerSignature: null,
       })
@@ -62,7 +66,8 @@ class HighlayerTx {
           nonce: this.nonce,
           actions: this.actions,
           bundlePosition: null,
-          ledgerPosition: null,
+          sequencerTxIndex: null,
+          trueTxIndex: null,
           parentBundleHash: null,
           sequencerSignature: null,
         })
@@ -79,7 +84,8 @@ class HighlayerTx {
       nonce: decodedObject.nonce,
       actions: decodedObject.actions,
       bundlePosition: decodedObject.bundlePosition,
-      ledgerPosition: decodedObject.ledgerPosition,
+      sequencerTxIndex: decodedObject.sequencerTxIndex,
+      trueTxIndex: decodedObject.trueTxIndex,
       parentBundleHash: decodedObject.parentBundleHash,
       sequencerSignature: decodedObject.sequencerSignature,
     });

@@ -6,7 +6,7 @@ module.exports = {
     try {
       const num = req.getParameter(0);
 
-      const hash = await global.databases.ledger.get(num);
+      const hash = await global.databases.sequencerTxIndex.get(num);
 
       if (hash) {
         let data = await global.databases.transactions.get(hash);

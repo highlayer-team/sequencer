@@ -17,7 +17,7 @@ const { iterateData } = require("./utils/iterateData");
 
   global.databases = {
     transactions: lmdb.open(`${dbDir}/transactions`),
-    ledger: lmdb.open(`${dbDir}/ledger`), // Stores all the transaction hashes indexed by the number
+    sequencerTxIndex: lmdb.open(`${dbDir}/sequencerTxIndex`), // Stores all the transaction hashes indexed by the number
     pendingBundles: lmdb.open(`${dbDir}/pendingBundles`), // index'd by the transaction txid
     confirmedBundles: lmdb.open(`${dbDir}/confirmedBundles`), // index'd by the transaction txid, and stores the bundle's hash
     bundleHash: lmdb.open(`${dbDir}/bundleHash`), // Index'd the bundle hash and keys the bundle number
@@ -55,7 +55,7 @@ const { iterateData } = require("./utils/iterateData");
   const { wdb } = node.get("walletdb");
 
   global.pendingTransactionLength = 0; // Transactions that are not yet in a confirmed bundle
-  global.ledgerLength = 0; // The total transactions length
+  global.sequencerTxIndex = 0; // The total transactions length
   global.bundleLentgh = 0; // The total amount of bundles
   global.recentBundleHash = ""; // The most recent parent bundle hash
   /*
@@ -80,8 +80,11 @@ const { iterateData } = require("./utils/iterateData");
   global.pendingTransactionLength = await iterateData(
     global.databases.toBeSettled
   );
-  global.ledgerLength = await iterateData(global.databases.ledger);
+  global.sequencerTxIndex = await iterateData(
+    global.databases.sequencerTxIndex
+  );
   global.bundleLength = await iterateData(global.databases.bundles);
+  console.log(global.bundleLength);
   global.recentBundle = global.bundleLength
     ? base58.encode(
         blake2s.digest(

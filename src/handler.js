@@ -103,7 +103,7 @@ async function startUdpServer() {
           }
 
           for (let i = startingPoint; i < startingPoint + amount; i++) {
-            let transactionHash = await global.databases.ledger.get(
+            let transactionHash = await global.databases.sequencerTxIndex.get(
               i.toString()
             );
             console.log(transactionHash);
@@ -124,7 +124,7 @@ async function startUdpServer() {
             const responseMessage = msgpackr.encode({
               op: 31,
               transaction: transactionData,
-              ledgerIndex: i,
+              sequencerTxIndex: i,
             });
             udpServer.send(
               responseMessage,
