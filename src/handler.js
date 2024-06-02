@@ -169,7 +169,7 @@ async function connectToNode() {
   });
 
   ws.on("close", (code, reason) => {
-    console.log(`Disconnected from WebSocket server: ${code} - ${reason}`);
+    // console.log(`Disconnected from WebSocket server: ${code} - ${reason}`);
   });
   ws.on("error", async (error) => {
     // await new Promise((resolve) => setTimeout(resolve, 1000));
