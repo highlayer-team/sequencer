@@ -16,7 +16,7 @@ async function handleTransaction(res, req, data) {
 
     if (decodedTx.actions.length <= 0) {
       res.writeStatus("400 Bad Request");
-      res.tryEnd(JSON.stringify({ error: "Invalid TX Format" }));
+      res.tryEnd(JSON.stringify({ Error: "Invalid TX Format" }));
       return;
     }
 
@@ -28,7 +28,7 @@ async function handleTransaction(res, req, data) {
 
     if (!validTx) {
       res.writeStatus("400 Bad Request");
-      res.tryEnd(JSON.stringify({ error: "Invalid Signature" }));
+      res.tryEnd(JSON.stringify({ Error: "Invalid Signature" }));
       return;
     }
 
@@ -43,7 +43,7 @@ async function handleTransaction(res, req, data) {
         res.cork(() => {
           res.writeStatus("400 Bad Request");
           res.tryEnd(
-            JSON.stringify({ error: "Insufficient Sequencer Balance" })
+            JSON.stringify({ Error: "Insufficient Sequencer Balance" })
           );
         });
         return;
@@ -58,7 +58,7 @@ async function handleTransaction(res, req, data) {
         res.cork(() => {
           res.writeStatus("400 Bad Request");
           res.tryEnd(
-            JSON.stringify({ error: "Insufficient Sequencer Balance" })
+            JSON.stringify({ Error: "Insufficient Sequencer Balance" })
           );
         });
         return;
@@ -89,7 +89,7 @@ async function handleTransaction(res, req, data) {
     if (await global.databases.transactions.get(txHash)) {
       res.cork(() => {
         res.writeStatus("400 Bad Request");
-        res.tryEnd(JSON.stringify({ error: "TX has already been uploaded" }));
+        res.tryEnd(JSON.stringify({ Error: "TX has already been uploaded" }));
       });
       return;
     }
@@ -135,7 +135,9 @@ async function handleTransaction(res, req, data) {
     console.log(e);
     res.cork(() => {
       res.writeStatus("500 Internal Server Error");
-      res.tryEnd("Internal Server Error");
+      res.tryEnd({
+        Error: "Internal Server Error",
+      });
     });
     return;
   }

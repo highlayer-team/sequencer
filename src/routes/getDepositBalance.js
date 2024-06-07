@@ -9,12 +9,18 @@ module.exports = {
 
       if (balance) {
         res.writeHeader("Content-Type", "text/plain");
-        return res.tryEnd(balance.toString("utf8"));
+        return res.tryEnd(
+          JSON.stringify({
+            balance: balance.toString("utf8"),
+          })
+        );
       } else {
         // console.warn("TX does not exist with that number");
         res.writeStatus("404 Not Found");
         return res.tryEnd(
-          "Requested Address does not have a Sequencer balance"
+          JSON.stringify({
+            Error: "Requested Address does not have a Sequencer balance",
+          })
         );
       }
     } catch (error) {

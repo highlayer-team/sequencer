@@ -16,7 +16,9 @@ module.exports = {
       } else {
         // console.warn("TX does not exist with that number");
         res.writeStatus("404 Not Found");
-        return res.tryEnd("TX does not exist with that number");
+        return res.tryEnd({
+          Error: "TX does not exist with that number",
+        });
       }
     } catch (error) {
       res.writeStatus("500 Internal Server Error");
