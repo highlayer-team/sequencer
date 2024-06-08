@@ -9,7 +9,12 @@ const msgpackr = require("msgpackr");
 // This client is used for sending data to the connected clients
 const udpSender = dgram.createSocket("udp4");
 
-async function handleTransaction(res, req, data) {
+function handleTransaction(res, req, data) {
+  console.log("");
+  console.log("");
+  console.log("");
+  const startTime = process.hrtime(); // Start timing
+
   try {
     let decodedData = handleArrayBuffer(data);
     let decodedTx = HighlayerTx.decode(decodedData);
@@ -37,7 +42,7 @@ async function handleTransaction(res, req, data) {
       (decodedTx.actions[0] &&
         decodedTx.actions[0].action !== "sequencerDeposit")
     ) {
-      let userBalance = await global.databases.balances.get(decodedTx.address);
+      let userBalance = global.databases.balances.get(decodedTx.address);
 
       if (!userBalance) {
         res.cork(() => {
@@ -64,10 +69,7 @@ async function handleTransaction(res, req, data) {
         return;
       }
 
-      await global.databases.balances.put(
-        decodedTx.address,
-        newBalance.toString()
-      );
+      global.databases.balances.put(decodedTx.address, newBalance.toString());
     }
 
     // Increment and use the new length
@@ -86,13 +88,17 @@ async function handleTransaction(res, req, data) {
     let buffer = base58.decode(signedTx);
     let txHash = base58.encode(blake2s.digest(Buffer.from(buffer), 32));
 
-    if (await global.databases.transactions.get(txHash)) {
+    if (global.databases.transactions.get(txHash)) {
       res.cork(() => {
         res.writeStatus("400 Bad Request");
         res.tryEnd(JSON.stringify({ Error: "TX has already been uploaded" }));
       });
       return;
     }
+
+    const endTime = process.hrtime(startTime); // End timing
+    const duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
+    console.log(`Total Duration: ${duration.toFixed(3)} ms`);
 
     res.cork(() => {
       res.writeStatus("200 OK");
@@ -108,12 +114,9 @@ async function handleTransaction(res, req, data) {
       );
     });
 
-    await global.databases.transactions.put(txHash, signedTx);
-    await global.databases.sequencerTxIndex.put(
-      ledgerPosition.toString(),
-      txHash
-    );
-    await global.databases.toBeSettled.put(txHash, signedTx);
+    global.databases.transactions.put(txHash, signedTx),
+      global.databases.sequencerTxIndex.put(ledgerPosition.toString(), txHash),
+      global.databases.toBeSettled.put(txHash, signedTx);
 
     clients.forEach((client) => {
       udpSender.send(
@@ -127,36 +130,30 @@ async function handleTransaction(res, req, data) {
         (err) => {
           if (err)
             console.error("Error sending message to client:", client.key, err);
-          else console.log("Message sent to", client.key);
         }
       );
     });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.cork(() => {
       res.writeStatus("500 Internal Server Error");
       res.tryEnd({
         Error: "Internal Server Error",
       });
     });
-    return;
   }
 }
 
 module.exports = {
   path: "/tx",
   method: "post",
-  handler: async (res, req) => {
+  handler: (res, req) => {
     res.onAborted(() => {
       res.aborted = true;
     });
 
-    await res.onData(async (data) => {
-      try {
-        await handleTransaction(res, req, data);
-      } catch (e) {
-        console.log(e);
-      }
+    res.onData((data) => {
+      handleTransaction(res, req, data);
     });
   },
 };
