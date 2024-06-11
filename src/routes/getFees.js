@@ -1,5 +1,5 @@
 module.exports = {
-  path: "/sequencer-prices",
+  path: "/sequencerPrices",
   method: "get",
   handler: async (res, req) => {
     try {

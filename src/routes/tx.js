@@ -10,14 +10,9 @@ const msgpackr = require("msgpackr");
 const udpSender = dgram.createSocket("udp4");
 
 function handleTransaction(res, req, data) {
-  console.log("");
-  console.log("");
-  console.log("");
   const startTime = process.hrtime(); // Start timing
-
   try {
-    let decodedData = handleArrayBuffer(data);
-    let decodedTx = HighlayerTx.decode(decodedData);
+    let decodedTx = HighlayerTx.decode(data);
 
     if (decodedTx.actions.length <= 0) {
       res.writeStatus("400 Bad Request");
@@ -27,9 +22,13 @@ function handleTransaction(res, req, data) {
 
     const validTx = Verifier.verifySignature(
       decodedTx.address,
-      decodedTx.extractPrototype(), // Gets rid of signature, and possible sequencer data
+      decodedTx.extractedRawTxID(),
       decodedTx.signature
     );
+
+    let endTime = process.hrtime(startTime); // End timing
+    let duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
+    console.log(`Time for sig to finish: ${duration.toFixed(3)} ms`);
 
     if (!validTx) {
       res.writeStatus("400 Bad Request");
@@ -72,6 +71,10 @@ function handleTransaction(res, req, data) {
       global.databases.balances.put(decodedTx.address, newBalance.toString());
     }
 
+    endTime = process.hrtime(startTime); // End timing
+    duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
+    console.log(`Time to check fee and change bal: ${duration.toFixed(3)} ms`);
+
     // Increment and use the new length
     let ledgerPosition = ++global.sequencerTxIndex;
     let bundlePosition = ++global.pendingTransactionLength;
@@ -81,12 +84,16 @@ function handleTransaction(res, req, data) {
     decodedTx.sequencerTxIndex = ledgerPosition;
     decodedTx.parentBundleHash = global.recentBundle;
     decodedTx.sequencerSignature = base58.encode(
-      signData(Buffer.from(new HighlayerTx(decodedTx).encode()))
+      signData(Buffer.from(decodedTx.rawTxID()))
     );
 
     let signedTx = new HighlayerTx(decodedTx).encode();
     let buffer = base58.decode(signedTx);
     let txHash = base58.encode(blake2s.digest(Buffer.from(buffer), 32));
+
+    endTime = process.hrtime(startTime); // End timing
+    duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
+    console.log(`Time to add sequencer hash: ${duration.toFixed(3)} ms`);
 
     if (global.databases.transactions.get(txHash)) {
       res.cork(() => {
@@ -96,8 +103,8 @@ function handleTransaction(res, req, data) {
       return;
     }
 
-    const endTime = process.hrtime(startTime); // End timing
-    const duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
+    endTime = process.hrtime(startTime); // End timing
+    duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
     console.log(`Total Duration: ${duration.toFixed(3)} ms`);
 
     res.cork(() => {
@@ -151,9 +158,19 @@ module.exports = {
     res.onAborted(() => {
       res.aborted = true;
     });
+    let dataStream = [];
 
-    res.onData((data) => {
-      handleTransaction(res, req, data);
+    res.onData((data, isLast) => {
+      let decodedData = handleArrayBuffer(data);
+      dataStream.push(decodedData);
+
+      if (isLast) {
+        try {
+          handleTransaction(res, req, dataStream.join(""));
+        } catch (e) {
+          console.log(e);
+        }
+      }
     });
   },
 };
