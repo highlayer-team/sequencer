@@ -43,7 +43,7 @@ function handleTransaction(res, req, data) {
         decodedTx.actions[0].action !== "sequencerDeposit")
     ) {
       let userBalance = global.databases.balances.get(decodedTx.address);
-      console.log(decodedTx.address)
+
       if (!userBalance) {
         res.cork(() => {
           res.writeStatus("400 Bad Request");
@@ -83,7 +83,7 @@ function handleTransaction(res, req, data) {
     decodedTx.parentBundleHash = global.recentBundle;
  
     decodedTx.sequencerSignature = 
-      signData(Buffer.from(decodedTx.rawTxID()))
+      signData(decodedTx.rawTxID())
     ;
  
     let signedTx = new HighlayerTx(decodedTx)
