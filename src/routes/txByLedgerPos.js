@@ -11,14 +11,14 @@ module.exports = {
       if (hash) {
         let data = await global.databases.transactions.get(hash);
 
-        res.writeHeader("Content-Type", "text/plain");
-        return res.tryEnd(data.toString("utf8"));
+        res.writeHeader("Content-Type", "application/vnd.msgpack");
+        return res.tryEnd(data);
       } else {
         // console.warn("TX does not exist with that number");
         res.writeStatus("404 Not Found");
-        return res.tryEnd({
+        return res.tryEnd(msgpackr.encode({
           Error: "TX does not exist with that number",
-        });
+        }));
       }
     } catch (error) {
       res.writeStatus("500 Internal Server Error");

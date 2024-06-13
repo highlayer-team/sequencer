@@ -1,3 +1,5 @@
+
+const msgpackr=require("msgpackr");
 module.exports = {
   path: "/sequencerPrices",
   method: "get",
@@ -5,7 +7,7 @@ module.exports = {
     try {
       res.writeHeader("Content-Type", "application/json");
       return res.tryEnd(
-        JSON.stringify({
+        msgpackr.encode({
           feePerByte: global.config.feePerByte.toString(),
         })
       );

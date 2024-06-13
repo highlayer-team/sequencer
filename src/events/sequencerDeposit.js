@@ -1,4 +1,5 @@
 module.exports = async (transaction) => {
+  console.log(transaction);
   console.log(`Sequencer Deposit Verified: ${transaction.depositId}`);
 
   if (await global.databases.depositsIndexed.get(transaction.depositId)) return;

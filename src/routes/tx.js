@@ -10,29 +10,30 @@ const msgpackr = require("msgpackr");
 const udpSender = dgram.createSocket("udp4");
 
 function handleTransaction(res, req, data) {
-  const startTime = process.hrtime(); // Start timing
+
   try {
+
+
     let decodedTx = HighlayerTx.decode(data);
 
     if (decodedTx.actions.length <= 0) {
       res.writeStatus("400 Bad Request");
-      res.tryEnd(JSON.stringify({ Error: "Invalid TX Format" }));
+      res.tryEnd(msgpackr.encode({ Error: "Invalid TX Format" }));
       return;
     }
+    
 
+    
     const validTx = Verifier.verifySignature(
       decodedTx.address,
       decodedTx.extractedRawTxID(),
       decodedTx.signature
     );
-
-    let endTime = process.hrtime(startTime); // End timing
-    let duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
-    console.log(`Time for sig to finish: ${duration.toFixed(3)} ms`);
+    
 
     if (!validTx) {
       res.writeStatus("400 Bad Request");
-      res.tryEnd(JSON.stringify({ Error: "Invalid Signature" }));
+      res.tryEnd(msgpackr.encode({ Error: "Invalid Signature" }));
       return;
     }
 
@@ -42,12 +43,12 @@ function handleTransaction(res, req, data) {
         decodedTx.actions[0].action !== "sequencerDeposit")
     ) {
       let userBalance = global.databases.balances.get(decodedTx.address);
-
+      console.log(decodedTx.address)
       if (!userBalance) {
         res.cork(() => {
           res.writeStatus("400 Bad Request");
           res.tryEnd(
-            JSON.stringify({ Error: "Insufficient Sequencer Balance" })
+            msgpackr.encode({ Error: "Insufficient Sequencer Balance" })
           );
         });
         return;
@@ -62,7 +63,7 @@ function handleTransaction(res, req, data) {
         res.cork(() => {
           res.writeStatus("400 Bad Request");
           res.tryEnd(
-            JSON.stringify({ Error: "Insufficient Sequencer Balance" })
+            msgpackr.encode({ Error: "Insufficient Sequencer Balance" })
           );
         });
         return;
@@ -71,9 +72,6 @@ function handleTransaction(res, req, data) {
       global.databases.balances.put(decodedTx.address, newBalance.toString());
     }
 
-    endTime = process.hrtime(startTime); // End timing
-    duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
-    console.log(`Time to check fee and change bal: ${duration.toFixed(3)} ms`);
 
     // Increment and use the new length
     let ledgerPosition = ++global.sequencerTxIndex;
@@ -83,35 +81,31 @@ function handleTransaction(res, req, data) {
     decodedTx.bundlePosition = bundlePosition;
     decodedTx.sequencerTxIndex = ledgerPosition;
     decodedTx.parentBundleHash = global.recentBundle;
-    decodedTx.sequencerSignature = base58.encode(
+ 
+    decodedTx.sequencerSignature = 
       signData(Buffer.from(decodedTx.rawTxID()))
-    );
+    ;
+ 
+    let signedTx = new HighlayerTx(decodedTx)
+    let signedEncodedTx=signedTx.encode()
+    
+    let txHash = signedTx.txID()
 
-    let signedTx = new HighlayerTx(decodedTx).encode();
-    let buffer = base58.decode(signedTx);
-    let txHash = base58.encode(blake2s.digest(Buffer.from(buffer), 32));
 
-    endTime = process.hrtime(startTime); // End timing
-    duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
-    console.log(`Time to add sequencer hash: ${duration.toFixed(3)} ms`);
 
     if (global.databases.transactions.get(txHash)) {
       res.cork(() => {
         res.writeStatus("400 Bad Request");
-        res.tryEnd(JSON.stringify({ Error: "TX has already been uploaded" }));
+        res.tryEnd(msgpackr.encode({ Error: "TX has already been uploaded" }));
       });
       return;
     }
 
-    endTime = process.hrtime(startTime); // End timing
-    duration = endTime[0] * 1000 + endTime[1] / 1000000; // Convert to milliseconds
-    console.log(`Total Duration: ${duration.toFixed(3)} ms`);
-
     res.cork(() => {
       res.writeStatus("200 OK");
-      res.writeHeader("Content-Type", "application/json");
+      res.writeHeader("Content-Type", "application/vnd.msgpack");
       res.tryEnd(
-        JSON.stringify({
+        msgpackr.encode({
           hash: txHash,
           bundlePosition: decodedTx.bundlePosition,
           sequencerTxIndex: decodedTx.sequencerTxIndex,
@@ -121,15 +115,15 @@ function handleTransaction(res, req, data) {
       );
     });
 
-    global.databases.transactions.put(txHash, signedTx),
-      global.databases.sequencerTxIndex.put(ledgerPosition.toString(), txHash),
-      global.databases.toBeSettled.put(txHash, signedTx);
+    global.databases.transactions.put(txHash, signedEncodedTx);
+    global.databases.sequencerTxIndex.put(ledgerPosition.toString(), txHash);
+    global.databases.toBeSettled.put(txHash, signedEncodedTx);
 
     clients.forEach((client) => {
       udpSender.send(
         msgpackr.encode({
           op: 21,
-          transaction: signedTx,
+          transaction: signedEncodedTx,
           sequencerTxIndex: ledgerPosition,
         }),
         client.port,
@@ -144,9 +138,9 @@ function handleTransaction(res, req, data) {
     console.error(e);
     res.cork(() => {
       res.writeStatus("500 Internal Server Error");
-      res.tryEnd({
+      res.tryEnd(msgpackr.encode({
         Error: "Internal Server Error",
-      });
+      }));
     });
   }
 }
@@ -158,27 +152,37 @@ module.exports = {
     res.onAborted(() => {
       res.aborted = true;
     });
-    let dataStream = [];
+    const contentLength = parseInt(req.getHeader("content-length"));
+    if (!contentLength) {
+      res.writeStatus("411 Length Required");
+      res.tryEnd(msgpackr.encode({ Error: "Content-length header missing" }));
+      return;
+    }
+    let totalBytesProcessed = 0;
+    let dataStream = Buffer.allocUnsafe(contentLength);
 
     res.onData((data, isLast) => {
-      let decodedData = handleArrayBuffer(data);
-      dataStream.push(decodedData);
+      totalBytesProcessed += data.byteLength;
 
+      if (totalBytesProcessed > contentLength) {
+   
+        res.writeStatus("400 Bad Request");
+        res.tryEnd(msgpackr.encode({ Error: "Content-length mismatch" }));
+        return;
+      }
+      Buffer.from(new Uint8Array(data)).copy(dataStream, totalBytesProcessed - data.length);
       if (isLast) {
+        if (totalBytesProcessed !== contentLength) {
+          res.writeStatus("400 content-length mismatch");
+          res.tryEnd(msgpackr.encode({ Error: "Content-length mismatch" }));
+          return;
+        }
         try {
-          handleTransaction(res, req, dataStream.join(""));
+          handleTransaction(res, req, dataStream);
         } catch (e) {
-          console.log(e);
+          console.error(e);
         }
       }
     });
   },
-};
-
-const handleArrayBuffer = (message) => {
-  if (message instanceof ArrayBuffer) {
-    const decoder = new TextDecoder();
-    return decoder.decode(message);
-  }
-  return message;
 };

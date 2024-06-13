@@ -1,3 +1,4 @@
+const msgpackr=require("msgpackr");
 module.exports = {
   path: "/depositBalance/:address",
   method: "get",
@@ -10,7 +11,7 @@ module.exports = {
       if (balance) {
         res.writeHeader("Content-Type", "text/plain");
         return res.tryEnd(
-          JSON.stringify({
+          msgpackr.encode({
             balance: balance.toString("utf8"),
           })
         );
@@ -18,7 +19,7 @@ module.exports = {
         // console.warn("TX does not exist with that number");
         res.writeStatus("404 Not Found");
         return res.tryEnd(
-          JSON.stringify({
+          msgpackr.encode({
             Error: "Requested Address does not have a Sequencer balance",
           })
         );
