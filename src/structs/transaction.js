@@ -26,7 +26,7 @@ class HighlayerTx {
 
   encode() {
     
-      msgpackr.encode({
+     return msgpackr.encode({
         address: this.address,
         signature: this.signature,
         nonce: this.nonce,
@@ -41,7 +41,7 @@ class HighlayerTx {
 
   extractPrototype() {
    
-      msgpackr.encode({
+      return msgpackr.encode({
         address: this.address,
         signature: null,
         nonce: this.nonce,
@@ -76,7 +76,7 @@ class HighlayerTx {
 
   extractedRawTxID() {
 
-    let hash= crypto
+   return crypto
       .createHash("blake2s256")
       .update(
         msgpackr.encode({
@@ -93,7 +93,7 @@ class HighlayerTx {
       )
       .digest();
      
-      return hash;
+
 
   }
 
