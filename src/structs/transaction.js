@@ -25,34 +25,31 @@ class HighlayerTx {
   }
 
   encode() {
-    
-     return msgpackr.encode({
-        address: this.address,
-        signature: this.signature,
-        nonce: this.nonce,
-        actions: this.actions,
-        bundlePosition: this.bundlePosition,
-        sequencerTxIndex: this.sequencerTxIndex,
-        trueTxIndex: this.trueTxIndex,
-        parentBundleHash: this.parentBundleHash,
-        sequencerSignature: this.sequencerSignature,
-      })
+    return msgpackr.encode({
+      address: this.address,
+      signature: this.signature,
+      nonce: this.nonce,
+      actions: this.actions,
+      bundlePosition: this.bundlePosition,
+      sequencerTxIndex: this.sequencerTxIndex,
+      trueTxIndex: this.trueTxIndex,
+      parentBundleHash: this.parentBundleHash,
+      sequencerSignature: this.sequencerSignature,
+    });
   }
 
   extractPrototype() {
-   
-      return msgpackr.encode({
-        address: this.address,
-        signature: null,
-        nonce: this.nonce,
-        actions: this.actions,
-        bundlePosition: null,
-        sequencerTxIndex: null,
-        trueTxIndex: null,
-        parentBundleHash: null,
-        sequencerSignature: null,
-      })
-    
+    return msgpackr.encode({
+      address: this.address,
+      signature: null,
+      nonce: this.nonce,
+      actions: this.actions,
+      bundlePosition: null,
+      sequencerTxIndex: null,
+      trueTxIndex: null,
+      parentBundleHash: null,
+      sequencerSignature: null,
+    });
   }
 
   txID() {
@@ -75,8 +72,7 @@ class HighlayerTx {
   }
 
   extractedRawTxID() {
-
-   return crypto
+    return crypto
       .createHash("blake2s256")
       .update(
         msgpackr.encode({
@@ -92,9 +88,6 @@ class HighlayerTx {
         })
       )
       .digest();
-     
-
-
   }
 
   rawTxID() {
@@ -117,9 +110,8 @@ class HighlayerTx {
   }
 
   static decode(buffer) {
-
     const decodedObject = msgpackr.decode(buffer);
-    
+
     return new HighlayerTx({
       address: decodedObject.address,
       signature: decodedObject.signature,

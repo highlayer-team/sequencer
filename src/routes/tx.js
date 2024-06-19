@@ -10,10 +10,7 @@ const msgpackr = require("msgpackr");
 const udpSender = dgram.createSocket("udp4");
 
 function handleTransaction(res, req, data) {
-
   try {
-
-
     let decodedTx = HighlayerTx.decode(data);
 
     if (decodedTx.actions.length <= 0) {
@@ -21,15 +18,12 @@ function handleTransaction(res, req, data) {
       res.tryEnd(msgpackr.encode({ Error: "Invalid TX Format" }));
       return;
     }
-    
 
-    
     const validTx = Verifier.verifySignature(
       decodedTx.address,
       decodedTx.extractedRawTxID(),
       decodedTx.signature
     );
-    
 
     if (!validTx) {
       res.writeStatus("400 Bad Request");
@@ -72,7 +66,6 @@ function handleTransaction(res, req, data) {
       global.databases.balances.put(decodedTx.address, newBalance.toString());
     }
 
-
     // Increment and use the new length
     let ledgerPosition = ++global.sequencerTxIndex;
     let bundlePosition = ++global.pendingTransactionLength;
@@ -81,17 +74,13 @@ function handleTransaction(res, req, data) {
     decodedTx.bundlePosition = bundlePosition;
     decodedTx.sequencerTxIndex = ledgerPosition;
     decodedTx.parentBundleHash = global.recentBundle;
- 
-    decodedTx.sequencerSignature = 
-      signData(decodedTx.rawTxID())
-    ;
- 
-    let signedTx = new HighlayerTx(decodedTx)
-    let signedEncodedTx=signedTx.encode()
-    
-    let txHash = signedTx.txID()
 
+    decodedTx.sequencerSignature = signData(decodedTx.rawTxID());
 
+    let signedTx = new HighlayerTx(decodedTx);
+    let signedEncodedTx = signedTx.encode();
+
+    let txHash = signedTx.txID();
 
     if (global.databases.transactions.get(txHash)) {
       res.cork(() => {
@@ -116,6 +105,7 @@ function handleTransaction(res, req, data) {
     });
 
     global.databases.transactions.put(txHash, signedEncodedTx);
+
     global.databases.sequencerTxIndex.put(ledgerPosition.toString(), txHash);
     global.databases.toBeSettled.put(txHash, signedEncodedTx);
 
@@ -138,9 +128,11 @@ function handleTransaction(res, req, data) {
     console.error(e);
     res.cork(() => {
       res.writeStatus("500 Internal Server Error");
-      res.tryEnd(msgpackr.encode({
-        Error: "Internal Server Error",
-      }));
+      res.tryEnd(
+        msgpackr.encode({
+          Error: "Internal Server Error",
+        })
+      );
     });
   }
 }
@@ -152,35 +144,43 @@ module.exports = {
     res.onAborted(() => {
       res.aborted = true;
     });
+
     const contentLength = parseInt(req.getHeader("content-length"));
     if (!contentLength) {
       res.writeStatus("411 Length Required");
       res.tryEnd(msgpackr.encode({ Error: "Content-length header missing" }));
       return;
     }
+
     let totalBytesProcessed = 0;
     let dataStream = Buffer.allocUnsafe(contentLength);
 
-    res.onData((data, isLast) => {
-      totalBytesProcessed += data.byteLength;
+    res.onData((chunk, isLast) => {
+      totalBytesProcessed += chunk.byteLength;
 
       if (totalBytesProcessed > contentLength) {
-   
         res.writeStatus("400 Bad Request");
         res.tryEnd(msgpackr.encode({ Error: "Content-length mismatch" }));
         return;
       }
-      Buffer.from(new Uint8Array(data)).copy(dataStream, totalBytesProcessed - data.length);
+
+      Buffer.from(chunk).copy(
+        dataStream,
+        totalBytesProcessed - chunk.byteLength
+      );
+
       if (isLast) {
         if (totalBytesProcessed !== contentLength) {
-          res.writeStatus("400 content-length mismatch");
-          res.tryEnd(msgpackr.encode({ Error: "Content-length mismatch" }));
+          res.writeStatus("400 Bad Request");
+          res.tryEnd(encode({ Error: "Content-length mismatch" }));
           return;
         }
         try {
           handleTransaction(res, req, dataStream);
         } catch (e) {
           console.error(e);
+          res.writeStatus("500 Internal Server Error");
+          res.tryEnd(encode({ Error: "Failed to process transaction" }));
         }
       }
     });
