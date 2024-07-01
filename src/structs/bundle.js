@@ -9,11 +9,10 @@ class HighlayerBundle {
 
   encode() {
     return msgpackr.encode({
-        parentBundle: this.parentBundle,
-        txids: this.txids,
-        sequencerSignature: this.sequencerSignature,
-      })
-  
+      parentBundle: this.parentBundle,
+      txids: this.txids,
+      sequencerSignature: this.sequencerSignature,
+    });
   }
 
   static decode(buffer) {

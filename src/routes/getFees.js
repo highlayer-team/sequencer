@@ -1,5 +1,5 @@
+const msgpackr = require("msgpackr");
 
-const msgpackr=require("msgpackr");
 module.exports = {
   path: "/sequencerPrices",
   method: "get",

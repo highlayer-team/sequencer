@@ -31,6 +31,16 @@ function handleTransaction(res, req, data) {
       return;
     }
 
+    let decodedTxId = decodedTx.txID();
+
+    if (global.databases.transactions.get(decodedTxId)) {
+      res.cork(() => {
+        res.writeStatus("400 Bad Request");
+        res.tryEnd(msgpackr.encode({ Error: "TX has already been uploaded" }));
+      });
+      return;
+    }
+
     if (
       decodedTx.actions.length > 1 ||
       (decodedTx.actions[0] &&
@@ -82,14 +92,6 @@ function handleTransaction(res, req, data) {
 
     let txHash = signedTx.txID();
 
-    if (global.databases.transactions.get(txHash)) {
-      res.cork(() => {
-        res.writeStatus("400 Bad Request");
-        res.tryEnd(msgpackr.encode({ Error: "TX has already been uploaded" }));
-      });
-      return;
-    }
-
     res.cork(() => {
       res.writeStatus("200 OK");
       res.writeHeader("Content-Type", "application/vnd.msgpack");
@@ -105,7 +107,7 @@ function handleTransaction(res, req, data) {
     });
 
     global.databases.transactions.put(txHash, signedEncodedTx);
-
+    global.databases.transactions.put(decodedTxId, txHash);
     global.databases.sequencerTxIndex.put(ledgerPosition.toString(), txHash);
     global.databases.toBeSettled.put(txHash, signedEncodedTx);
 

@@ -1,4 +1,4 @@
-const msgpackr=require("msgpackr");
+const msgpackr = require("msgpackr");
 module.exports = {
   path: "/depositBalance/:address",
   method: "get",

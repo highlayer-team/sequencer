@@ -39,22 +39,24 @@ async function generateBundle() {
 
   let hash = blake2s.digest(Buffer.from(bundle.encode()), 32);
 
-
-  global.recentBundle = hash.toString('hex');
+  global.recentBundle = hash.toString("hex");
   global.global.pendingTransactionLength = 0;
   let bundleLength = ++global.bundleLength;
 
-  console.log("Attempting to upload bundle hash:", hash.toString('hex'));
+  console.log("Attempting to upload bundle hash:", hash.toString("hex"));
   let tx = await createTx(hash);
   await global.databases.pendingBundles.put(tx.txid(), {
     bundleNumber: bundleLength.toString(),
-    bundleHash: hash.toString('hex'),
+    bundleHash: hash.toString("hex"),
     txhash: tx.hash(),
     txid: tx.txid(),
     blockCreated: global.block,
   });
   await global.databases.bundles.put(bundleLength.toString(), bundle.encode());
-  await global.databases.bundleHash.put(hash.toString('hex'), bundleLength.toString());
+  await global.databases.bundleHash.put(
+    hash.toString("hex"),
+    bundleLength.toString()
+  );
 
   global.node.broadcast(tx);
 }

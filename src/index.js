@@ -86,13 +86,13 @@ const { iterateData } = require("./utils/iterateData");
   global.bundleLength = await iterateData(global.databases.bundles);
   console.log(global.bundleLength);
   global.recentBundle = global.bundleLength
-    ? 
-        blake2s.digest(
+    ? blake2s
+        .digest(
           Buffer.from(
             await global.databases.bundles.get(global.bundleLength.toString())
           )
-        ).toString('hex')
-      
+        )
+        .toString("hex")
     : "Genesis";
 
   console.log("Current Bundle hash: " + recentBundle);
